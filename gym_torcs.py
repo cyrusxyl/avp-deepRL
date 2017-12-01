@@ -154,9 +154,9 @@ class TorcsEnv:
         #        episode_terminate = True
         #        client.R.d['meta'] = True
 
-        if np.cos(obs['angle']) < 0: # Episode is terminated if the agent runs backward
-            episode_terminate = True
-            client.R.d['meta'] = True
+        # if np.cos(obs['angle']) < 0: # Episode is terminated if the agent runs backward
+        #     episode_terminate = True
+        #     client.R.d['meta'] = True
 
 
         if client.R.d['meta'] is True: # Send a reset signal
@@ -245,7 +245,7 @@ class TorcsEnv:
                      'speedX', 'speedY', 'speedZ', 'angle', 'damage',
                      'opponents',
                      'rpm',
-                     'track', 
+                     'track',
                      'trackPos',
                      'wheelSpinVel']
             Observation = col.namedtuple('Observaion', names)
