@@ -322,10 +322,10 @@ class ServerState(object):
         sensors= [ # Select the ones you want in the order you want them.
         #'curLapTime',
         #'lastLapTime',
-        u'stucktimer',
+        #'stucktimer',
         #'damage',
         #'focus',
-        u'fuel',
+        #'fuel',
         #'gear',
         u'distRaced',
         u'distFromStart',
@@ -336,7 +336,7 @@ class ServerState(object):
         u'speedZ',
         u'speedY',
         u'speedX',
-        u'targetSpeed',
+        #'targetSpeed',
         u'rpm',
         u'skid',
         u'slip',
@@ -345,8 +345,8 @@ class ServerState(object):
         u'angle',
         ]
 
-        #for k in sorted(self.d): # Use this to get all sensors.
-        for k in sensors:
+        for k in sorted(self.d): # Use this to get all sensors.
+        # for k in sensors:
             if type(self.d.get(k)) is list: # Handle list type data.
                 if k == u'track': # Nice display for track sensors.
                     strout= unicode()
@@ -571,6 +571,7 @@ if __name__ == u"__main__":
     C= Client(p=3101)
     for step in xrange(C.maxSteps,0,-1):
         C.get_servers_input()
+        print(C.S)
         drive_example(C)
         C.respond_to_server()
     C.shutdown()
