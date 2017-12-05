@@ -12,10 +12,11 @@ import time
 
 class TorcsEnv:
     terminal_judge_start = 100  # If after 100 timestep still no progress, terminated
-    termination_limit_progress = 5  # [km/h], episode terminates if car is running slower than this limit
-    default_speed = 50
+    termination_limit_progress = 100  #  m, episode terminates if car haven't progress to this point
+    default_speed = 1000
 
     initial_reset = True
+    stucked = 0
 
     def __init__(self, vision=False, throttle=False, gear_change=False):
         self.vision = vision
@@ -103,13 +104,13 @@ class TorcsEnv:
             if self.throttle:
                 if client.S.d['speedX'] > 50:
                     action_torcs['gear'] = 2
-                if client.S.d['speedX'] > 80:
+                if client.S.d['speedX'] > 105:
                     action_torcs['gear'] = 3
-                if client.S.d['speedX'] > 110:
+                if client.S.d['speedX'] > 145:
                     action_torcs['gear'] = 4
-                if client.S.d['speedX'] > 140:
+                if client.S.d['speedX'] > 180:
                     action_torcs['gear'] = 5
-                if client.S.d['speedX'] > 170:
+                if client.S.d['speedX'] > 210:
                     action_torcs['gear'] = 6
         # Save the privious full-obs from torcs for the reward calculation
         obs_pre = copy.deepcopy(client.S.d)
@@ -122,7 +123,7 @@ class TorcsEnv:
 
         # Get the current full-observation from torcs
         obs = client.S.d
-
+        print client.S
         # Make an obsevation from a raw observation vector from TORCS
         self.observation = self.make_observaton(obs)
 
@@ -133,9 +134,11 @@ class TorcsEnv:
         sp = np.array(obs['speedX'])
         damage = np.array(obs['damage'])
         rpm = np.array(obs['rpm'])
+        racePos = np.array(obs['racePos'])
+        distRaced = np.array(obs['distRaced'])
 
-        progress = sp*np.cos(obs['angle']) - np.abs(sp*np.sin(obs['angle'])) - sp * np.abs(obs['trackPos'])
-        reward = progress
+        progress = sp*np.cos(obs['angle']) - np.abs(sp*np.sin(obs['angle'])) - sp*(np.abs(obs['trackPos'])-0.8)
+        reward = distRaced/100 + progress - racePos*10
 
         # collision detection
         if obs['damage'] - obs_pre['damage'] > 0:
@@ -143,20 +146,31 @@ class TorcsEnv:
 
         # Termination judgement #########################
         episode_terminate = False
-        #if (abs(track.any()) > 1 or abs(trackPos) > 1):  # Episode is terminated if the car is out of track
-        #    reward = -200
-        #    episode_terminate = True
-        #    client.R.d['meta'] = True
+        if self.time_step > 10:
+            if progress < 1:
+                self.stucked += 1
+            else:
+                self.stucked = 0
+        else:
+            self.stucked = 0
 
-        #if self.terminal_judge_start < self.time_step: # Episode terminates if the progress of agent is small
-        #    if progress < self.termination_limit_progress:
-        #        print("No progress")
-        #        episode_terminate = True
-        #        client.R.d['meta'] = True
+        if self.stucked > 20:
+            episode_terminate = True
+            client.R.d['meta'] = True
+        if (np.any(track<=0)):  # Episode is terminated if the car is out of track
+           reward = -200
+           episode_terminate = True
+           client.R.d['meta'] = True
 
-        # if np.cos(obs['angle']) < 0: # Episode is terminated if the agent runs backward
-        #     episode_terminate = True
-        #     client.R.d['meta'] = True
+        if self.terminal_judge_start < self.time_step: # Episode terminates if the progress of agent is small
+           if distRaced < self.termination_limit_progress:
+               print("No progress")
+               episode_terminate = True
+               client.R.d['meta'] = True
+
+        if np.cos(obs['angle']) < 0: # Episode is terminated if the agent runs backward
+            episode_terminate = True
+            client.R.d['meta'] = True
 
 
         if client.R.d['meta'] is True: # Send a reset signal

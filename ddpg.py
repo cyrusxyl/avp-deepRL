@@ -56,7 +56,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
     # Generate a Torcs environment
     env = TorcsEnv(vision=vision, throttle=True, gear_change=False)
 
-    #Now load the weight
+    # Now load the weight
     # print("Now we load the weight")
     # try:
     #     actor.model.load_weights("actormodel.h5")
@@ -78,6 +78,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             ob = env.reset()
 
         s_t = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
+        print ob.track
 
         total_reward = 0.
         stucked = 0
@@ -102,10 +103,6 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             a_t[0][2] = a_t_original[0][2] + noise_t[0][2]
 
             ob, r_t, done, info = env.step(a_t[0])
-            if r_t < 1:
-                stucked += 1
-            else:
-                stucked = 0
 
             s_t1 = np.hstack((ob.angle, ob.track, ob.trackPos, ob.speedX, ob.speedY, ob.speedZ, ob.wheelSpinVel/100.0, ob.rpm))
 
@@ -142,7 +139,7 @@ def playGame(train_indicator=0):    #1 means Train, 0 means simply Run
             print("Episode", i, "Step", step, "Action", a_t, "Reward", r_t, "Loss", loss)
 
             step += 1
-            if done or stucked>=30:
+            if done:
                 break
 
         if np.mod(i, 3) == 0:
